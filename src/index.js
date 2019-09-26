@@ -1,19 +1,11 @@
 function eval() {
-    // Do not use eval!!!
-    return;
-}
-
-function eval() {
   // Do not use eval!!!
   return;
 }
 
-// сложение и вычитание
 const plusMinus = str => {
   let result = str;
-  while (isNaN(Number(result)) && (result.includes("+") || result.includes("-"))) {
-    const strArr = result.split("");
-    // находим индекс индекс и тип операции
+  while (result.length !== 1 && (result.includes("+") || result.includes("-"))) {
     let index = null;
     if (result.includes("+") && result.includes("-")) {
       index = Math.min(result.indexOf("+"), result.indexOf("-"));
@@ -21,46 +13,18 @@ const plusMinus = str => {
       index = Math.max(result.indexOf("+"), result.indexOf("-"));
     }
     const type = result[index];
-    const nums = [];
-    const forSplice = [];
-    // находим число перед операцией
-    for (let i = index - 1; i >= 0; i--) {
-      if (isNaN(Number(result[i]))) {
-        nums.push(result.slice(i + 1, index));
-        forSplice.push(i + 1);
-        break;
-      } else if (!result[i - 1]) {
-        nums.push(result.slice(i, index));
-        forSplice.push(i);
-        break;
-      }
-    }
-    // находим число после операции
-    for (let i = index + 1; i < result.length; i++) {
-      if (isNaN(Number(result[i]))) {
-        nums.push(result.slice(index + 1, i));
-        forSplice.push(i);
-        break;
-      } else if (!result[i + 1]) {
-        nums.push(result.slice(index + 1, i + 1));
-        forSplice.push(i + 1);
-        break;
-      }
-    }
-
-    const newNum =
-      type === "+" ? String(Number(nums[0]) + Number(nums[1])) : String(nums[0] - nums[1]);
-    strArr.splice(forSplice[0], forSplice[1] - forSplice[0], newNum);
-    result = strArr.join("");
+    const num1 = Number(String(result[index - 1]).replace("M", "-"));
+    const num2 = Number(String(result[index + 1]).replace("M", "-"));
+    const newNum = type === "+" ? num1 + num2 : num1 - num2;
+    const temp = newNum < 0 ? `M${Math.abs(newNum)}` : newNum;
+    result.splice(index - 1, 3, temp);
   }
-  return result;
+  return result[0];
 };
 
-// умножение и деление
 const multiplyDevision = str => {
-  let result = str.replace(/\(|\)/g, "");
+  let result = str.replace(/\(|\)/g, "").split(/(\+|\-|\*|\/)/g);
   while (result.includes("*") || result.includes("/")) {
-    // находим индекс индекс и тип операции
     let index = null;
     if (result.includes("*") && result.includes("/")) {
       index = Math.min(result.indexOf("*"), result.indexOf("/"));
@@ -68,54 +32,40 @@ const multiplyDevision = str => {
       index = Math.max(result.indexOf("*"), result.indexOf("/"));
     }
     const type = result[index];
-    const nums = [];
-    const forSplice = [];
-    console.log(result);
-    // находим число перед операцией
-    for (let i = index - 1; i >= 0; i--) {
-      if (isNaN(Number(result[i])) && result[i] !== "." && result[i] !== "*") {
-        nums.push(result.slice(i + 1, index));
-        forSplice.push(i + 1);
-        break;
-      } else if (!result[i - 1]) {
-        nums.push(result.slice(i, index));
-        forSplice.push(i);
-        break;
-      }
+    if (result[index + 1] === "0" && type === "/") {
+      throw new Error("TypeError: Devision by zero.");
     }
-    // находим число после операции
-    for (let i = index + 1; i < result.length; i++) {
-      if (isNaN(Number(result[i])) && result[i] !== ".") {
-        nums.push(result.slice(index + 1, i));
-        forSplice.push(i);
-        break;
-      } else if (!result[i + 1]) {
-        nums.push(result.slice(index + 1, i + 1));
-        forSplice.push(i + 1);
-        break;
-      }
-    }
-    if (nums[1] === "0" && type === "/") {
-      return "error";
-    }
-    const newNum =
-      type === "*"
-        ? nums[0].replace(",", ".") * nums[1].replace(",", ".")
-        : nums[0].replace(",", ".") / nums[1].replace(",", ".");
-    const content = str.slice(forSplice[0], forSplice[1]);
-    const newStr = str.replace(content, newNum);
-    // result = newStr.replace(".", ",");
+    const num1 = Number(String(result[index - 1]).replace("M", "-"));
+    const num2 = Number(String(result[index + 1]).replace("M", "-"));
+    const newNum = type === "*" ? num1 * num2 : num1 / num2;
+    result.splice(index - 1, 3, newNum < 0 ? "M" + Math.abs(newNum) : String(newNum));
   }
   return result.includes("+") || result.includes("-") ? plusMinus(result) : result;
 };
 
-// основная функция
+const checkBrackets = str => {
+  let count = 0;
+  let bracketsArr = str.match(/\(|\)/g);
+  bracketsArr.forEach(item => {
+    if (item === "(") {
+      count++;
+    } else {
+      count--;
+    }
+    if (count < 0) {
+      throw new Error("ExpressionError: Brackets must be paired");
+    }
+  });
+  if (count !== 0) {
+    throw new Error("ExpressionError: Brackets must be paired");
+  }
+};
+
 function expressionCalculator(expr) {
-  let str = expr.replace(/ /g, ""); // удаляем пробелы
-  // если скобки есть
+  let str = expr.replace(/ /g, "");
+  str.match(/\(|\)/g) && checkBrackets(str);
   while (str.includes("(") || str.includes(")")) {
     let brackets = [];
-    // ищем первую пару скобок
     for (let i = 0; i < str.length; i++) {
       if (str[i] === "(") {
         brackets[0] = i;
@@ -125,28 +75,14 @@ function expressionCalculator(expr) {
       }
     }
     const content = str.slice(brackets[0], brackets[1] + 1);
-    const temp = multiplyDevision(content); // значение раскрытой скобки
-    if (temp === "error") {
-      return new Error("TypeError: Devision by zero.");
-    }
+    const temp = multiplyDevision(content);
     const newStr = str.replace(content, temp);
     str = newStr;
   }
   const result = multiplyDevision(str);
-  if (result === "error") {
-    return new Error("TypeError: Devision by zero.");
-  }
-  return Number(result).toFixed(4);
+
+  return Number(String(result).replace("M", "-"));
 }
-
-console.log(expressionCalculator("53.2241379310344848*36"));
-// console.log(expressionCalculator(" 84 + (62 / 33 * 10 )+ 15 "));
-// console.log(expressionCalculator(" 48 + 59 * 86 * 92 * 23 "));
-// console.log(expressionCalculator(" 1 / 0"));
-// console.log(expressionCalculator(" 1/2"));
-// expressionCalculator("1/2")
-// expressionCalculator()
-
 module.exports = {
-    expressionCalculator
-}
+  expressionCalculator
+};
